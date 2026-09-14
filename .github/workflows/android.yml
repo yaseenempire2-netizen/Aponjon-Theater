@@ -5,35 +5,54 @@ on:
   push:
     branches:
       - main
-      - master
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout project
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          
+          node-version: 22
+
+      - name: Extract project ZIP
+        run: |
+          ZIP=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+
+          if [ -z "$ZIP" ]; then
+            echo "Project ZIP not found"
+            exit 1
+          fi
+
+          mkdir extracted
+          unzip -q "$ZIP" -d extracted
+
+          PROJECT_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Project folder not found"
+            exit 1
+          fi
+
+          cp -a "$PROJECT_DIR"/. .
+
+          rm -rf extracted
+          rm -rf node_modules
+          rm -rf client/node_modules
+          rm -rf server/node_modules
 
       - name: Install root dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install client dependencies
-        working-directory: client
-        run: npm install
+        run: npm ci --prefix client
 
       - name: Build web app
-        working-directory: client
         run: npm run build
-
-      - name: Install Capacitor
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
       - name: Create Android project
         run: npx cap add android
@@ -45,9 +64,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
-      - name: Setup Android SDK
+      - name: Setup Android
         uses: android-actions/setup-android@v3
 
       - name: Build APK
