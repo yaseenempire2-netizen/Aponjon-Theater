@@ -48,9 +48,6 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
-      - name: Install TypeScript
-        run: npm install -D typescript
-
       - name: Install client dependencies
         run: npm install --prefix client
 
